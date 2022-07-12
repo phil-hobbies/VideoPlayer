@@ -29,33 +29,36 @@ struct ContentView : View {
     @State private var totalDuration: Double = 0
     
     var body: some View {
-        VStack {
-            VideoPlayer(url: videoURLs[index % videoURLs.count], play: $play, time: $time)
-                .autoReplay(autoReplay)
-                .mute(mute)
-                .onBufferChanged { progress in print("onBufferChanged \(progress)") }
-                .onPlayToEndTime { print("onPlayToEndTime") }
-                .onReplay { print("onReplay") }
-                .onStateChanged { state in
-                    switch state {
-                    case .loading:
-                        self.stateText = "Loading..."
-                    case .playing(let totalDuration):
-                        self.stateText = "Playing!"
-                        self.totalDuration = totalDuration
-                    case .paused(let playProgress, let bufferProgress):
-                        self.stateText = "Paused: play \(Int(playProgress * 100))% buffer \(Int(bufferProgress * 100))%"
-                    case .error(let error):
-                        self.stateText = "Error: \(error)"
-                    }
-                }
-                .aspectRatio(1.78, contentMode: .fit)
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.7), radius: 6, x: 0, y: 2)
-                .padding()
+        ZStack {
             
-            Text(stateText)
-                .padding()
+            ZStack {
+                Color.black
+                
+                VideoPlayer(url: videoURLs[index % videoURLs.count], play: $play, time: $time)
+                    .autoReplay(autoReplay)
+                    .mute(mute)
+                    .onBufferChanged { progress in print("onBufferChanged \(progress)") }
+                    .onPlayToEndTime { print("onPlayToEndTime") }
+                    .onReplay { print("onReplay") }
+                    .onStateChanged { state in
+                        switch state {
+                        case .loading:
+                            self.stateText = "Loading..."
+                        case .playing(let totalDuration):
+                            self.stateText = "Playing!"
+                            self.totalDuration = totalDuration
+                        case .paused(let playProgress, let bufferProgress):
+                            self.stateText = "Paused: play \(Int(playProgress * 100))% buffer \(Int(bufferProgress * 100))%"
+                        case .error(let error):
+                            self.stateText = "Error: \(error)"
+                        }
+                    }
+                    .aspectRatio(1.78, contentMode: .fit)
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.7), radius: 6, x: 0, y: 2)
+                    .background(.black)
+            }
+            
             
             HStack {
                 Button(self.play ? "Pause" : "Play") {
@@ -73,29 +76,24 @@ struct ContentView : View {
                 Button(self.autoReplay ? "Auto Replay On" : "Auto Replay Off") {
                     self.autoReplay.toggle()
                 }
+                Button("Next Video") { self.index += 1 }
             }
-            
-            HStack {
-                Button("Backward 5s") {
-                    self.time = CMTimeMakeWithSeconds(max(0, self.time.seconds - 5), preferredTimescale: self.time.timescale)
-                }
-                
-                Divider().frame(height: 20)
-                
-                Text("\(getTimeString()) / \(getTotalDurationString())")
-                
-                Divider().frame(height: 20)
-                
-                Button("Forward 5s") {
-                    self.time = CMTimeMakeWithSeconds(min(self.totalDuration, self.time.seconds + 5), preferredTimescale: self.time.timescale)
-                }
-            }
-            
-            Button("Next Video") { self.index += 1 }
-            
-            Spacer()
+
         }
-        .onDisappear { self.play = false }
+        .ignoresSafeArea()
+        .onDisappear {
+            self.play = false
+            DispatchQueue.main.async {
+//                AppDelegate.orientationLock = UIInterfaceOrientationMask.portrait
+                UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+                UINavigationController.attemptRotationToDeviceOrientation()
+            }
+        }
+        .onAppear{
+//            AppDelegate.orientationLock = UIInterfaceOrientationMask.landscapeLeft
+            UIDevice.current.setValue(UIInterfaceOrientation.landscapeLeft.rawValue, forKey: "orientation")
+            UINavigationController.attemptRotationToDeviceOrientation()
+        }
     }
     
     func getTimeString() -> String {
@@ -115,6 +113,7 @@ struct ContentView : View {
 struct ContentView_Previews : PreviewProvider {
     static var previews: some View {
         ContentView()
+.previewInterfaceOrientation(.landscapeRight)
     }
 }
 #endif
